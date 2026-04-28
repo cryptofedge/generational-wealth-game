@@ -21,7 +21,7 @@ export default function PolicyScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>ðï¸</Text>
+          <Text style={styles.emptyIcon}>🏛️</Text>
           <Text style={styles.emptyTitle}>No Policy Yet</Text>
           <Text style={styles.emptySubtitle}>
             Go to the Game tab and open your IBC whole life policy to start building your banking system.
@@ -55,8 +55,8 @@ export default function PolicyScreen() {
 
         {/* Header */}
         <LinearGradient colors={['#1A0800', '#0A0A0A']} style={styles.header}>
-          <Text style={styles.headerTitle}>ð¦ Your Policy</Text>
-          <Text style={styles.headerSub}>Year {metrics.policyYear} â¢ {player.name}</Text>
+          <Text style={styles.headerTitle}>🏦 Your Policy</Text>
+          <Text style={styles.headerSub}>Year {metrics.policyYear} · {player.name}</Text>
           <View style={styles.headerStats}>
             <View style={styles.headerStat}>
               <Text style={styles.headerStatValue}>{formatMoney(metrics.cashValue)}</Text>
@@ -115,13 +115,13 @@ export default function PolicyScreen() {
             {/* Key Metrics Grid */}
             <View style={styles.metricsGrid}>
               {[
-                { label: 'Annual Premium', value: formatMoney(policy.annualPremium), icon: 'ð', color: COLORS.text },
-                { label: 'Total Premiums Paid', value: formatMoney(metrics.totalPremiumsPaid), icon: 'ð¸', color: COLORS.textSecondary },
-                { label: 'Cash Value', value: formatMoney(metrics.cashValue), icon: 'ð°', color: COLORS.gold },
-                { label: 'Available to Borrow', value: formatMoney(metrics.availableLoan), icon: 'ð¦', color: COLORS.green },
-                { label: 'Outstanding Loans', value: formatMoney(metrics.loanBalance), icon: 'ð', color: metrics.loanBalance > 0 ? COLORS.red : COLORS.textMuted },
-                { label: 'Death Benefit', value: formatMoney(metrics.deathBenefit), icon: 'ð¡ï¸', color: COLORS.blue },
-                { label: 'Dividends Earned', value: formatMoney(policy.dividendsEarned), icon: 'ð', color: COLORS.primary },
+                { label: 'Annual Premium', value: formatMoney(policy.annualPremium), icon: '💳', color: COLORS.text },
+                { label: 'Total Premiums Paid', value: formatMoney(metrics.totalPremiumsPaid), icon: '💸', color: COLORS.textSecondary },
+                { label: 'Cash Value', value: formatMoney(metrics.cashValue), icon: '💰', color: COLORS.gold },
+                { label: 'Available to Borrow', value: formatMoney(metrics.availableLoan), icon: '🏦', color: COLORS.green },
+                { label: 'Outstanding Loans', value: formatMoney(metrics.loanBalance), icon: '📊', color: metrics.loanBalance > 0 ? COLORS.red : COLORS.textMuted },
+                { label: 'Death Benefit', value: formatMoney(metrics.deathBenefit), icon: '🛡️', color: COLORS.blue },
+                { label: 'Dividends Earned', value: formatMoney(policy.dividendsEarned), icon: '📈', color: COLORS.primary },
                 { label: 'Policy Year', value: `Year ${metrics.policyYear}`, icon: 'ð', color: COLORS.textSecondary },
               ].map((item, i) => (
                 <View key={i} style={styles.metricCard}>
@@ -134,7 +134,7 @@ export default function PolicyScreen() {
 
             {/* Growth Rate Info */}
             <View style={styles.infoCard}>
-              <Text style={styles.infoCardTitle}>ð Your Policy Grows At</Text>
+              <Text style={styles.infoCardTitle}>📈 Your Policy Grows At</Text>
               <View style={styles.rateRow}>
                 <View style={styles.rateBadge}>
                   <Text style={styles.rateValue}>{(POLICY_CONSTANTS.BASE_GROWTH_RATE * 100).toFixed(1)}%</Text>
@@ -183,7 +183,7 @@ export default function PolicyScreen() {
                 </View>
               ) : (
                 <View style={styles.noLoanCard}>
-                  <Text style={styles.noLoanText}>â No outstanding loans. Full borrowing capacity available.</Text>
+                  <Text style={styles.noLoanText}>✅ No outstanding loans. Full borrowing capacity available.</Text>
                 </View>
               )}
             </View>
@@ -195,7 +195,7 @@ export default function PolicyScreen() {
                 onPress={() => setShowLoanModal(true)}
               >
                 <LinearGradient colors={GRADIENTS.primary} style={styles.loanActionGradient}>
-                  <Text style={styles.loanActionIcon}>ð³</Text>
+                  <Text style={styles.loanActionIcon}>💳</Text>
                   <Text style={styles.loanActionText}>Take Loan</Text>
                   <Text style={styles.loanActionSub}>Up to {formatMoney(metrics.availableLoan)}</Text>
                 </LinearGradient>
@@ -207,7 +207,7 @@ export default function PolicyScreen() {
                   onPress={() => setShowRepayModal(true)}
                 >
                   <LinearGradient colors={[COLORS.green, COLORS.greenDark]} style={styles.loanActionGradient}>
-                    <Text style={styles.loanActionIcon}>â</Text>
+                    <Text style={styles.loanActionIcon}>✅</Text>
                     <Text style={styles.loanActionText}>Repay Loan</Text>
                     <Text style={styles.loanActionSub}>Balance: {formatMoney(policy.loanBalance)}</Text>
                   </LinearGradient>
@@ -217,7 +217,7 @@ export default function PolicyScreen() {
 
             {/* Loan Education */}
             <View style={styles.eduCard}>
-              <Text style={styles.eduTitle}>ð How Policy Loans Work</Text>
+              <Text style={styles.eduTitle}>💡 How Policy Loans Work</Text>
               <Text style={styles.eduText}>
                 Unlike bank loans, policy loans don't require credit checks or approval.
                 Your cash value continues to grow even while loaned out â because you're
@@ -272,7 +272,7 @@ export default function PolicyScreen() {
                   <Text style={styles.howStepText}>{item.step}</Text>
                 </View>
                 <View style={styles.howContent}>
-                  <Text style={styles.howIcon}>{item.icon}</Text>
+                  <Text style={styles.howIcon}>💰</Text>
                   <View style={styles.howText}>
                     <Text style={styles.howTitle}>{item.title}</Text>
                     <Text style={styles.howDesc}>{item.desc}</Text>
@@ -290,7 +290,7 @@ export default function PolicyScreen() {
       <Modal visible={showLoanModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>ð³ Take Policy Loan</Text>
+            <Text style={styles.modalTitle}>💳 Take Policy Loan</Text>
             <Text style={styles.modalSub}>
               Available: {formatMoney(metrics.availableLoan)}
             </Text>
@@ -318,7 +318,7 @@ export default function PolicyScreen() {
       <Modal visible={showRepayModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>â Repay Policy Loan</Text>
+            <Text style={styles.modalTitle}>✅ Repay Policy Loan</Text>
             <Text style={styles.modalSub}>
               Balance: {formatMoney(policy.loanBalance)}
             </Text>
