@@ -126,7 +126,7 @@ export default function PolicyScreen() {
               ].map((item, i) => (
                 <View key={i} style={styles.metricCard}>
                   <Text style={styles.metricIcon}>{item.icon}</Text>
-                  <Text style={styles.metricLabel}>{)tem.label}</Text>
+                  <Text style={styles.metricLabel}>{item.label}</Text>
                   <Text style={[styles.metricValue, { color: item.color }]}>{item.value}</Text>
                 </View>
               ))}

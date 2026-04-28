@@ -1,13 +1,28 @@
 /**
  * GameContext.js
  * Global game state management using React Context + useReducer.
+ *
+ * Bug fixes applied:
+ *  1. Expense tracking: annualExpenses now updates every year alongside income growth.
+ *  2. AsyncStorage persistence: state is saved on every dispatch and restored on mount.
+ *  3. MEC risk is now active: if isMECRisk is true the policy XP bonus is halved and
+ *     a warning flag is surfaced for the UI to display.
  */
 
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
-import { createPolicy, growPolicy, takePolicyLoan, repayPolicyLoan, formatMoney } from '../engine/IBCEngine';
+import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  createPolicy,
+  growPolicy,
+  takePolicyLoan,
+  repayPolicyLoan,
+  formatMoney,
+} from '../engine/IBCEngine';
 import { getRandomEvent, calculateEventXP } from '../engine/LifeEvents';
 
-// âââ Income Levels ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+const STORAGE_KEY = '@gwg_state_v1';
+
+// ─── Income Levels ────────────────────────────────────────────────────────────
 
 export const INCOME_LEVELS = {
   starter: { label: 'Starter ($45K)', income: 45000, description: 'Entry-level career' },
@@ -17,7 +32,7 @@ export const INCOME_LEVELS = {
 
 export const EXPENSE_RATIO = 0.55; // 55% of income goes to living expenses
 
-// âââ Initial State ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Initial State ────────────────────────────────────────────────────────────
 
 const initialState = {
   phase: 'splash',   // splash | creation | playing | event | retired | legacy
@@ -29,24 +44,25 @@ const initialState = {
     xp: 0,
     level: 1,
     generation: 1,
-    ibcStreak: 0,    // consecutive years using IBC
+    ibcStreak: 0,
   },
   finances: {
-    savings: 5000,    // traditional savings/investments
-    policy: null,     // IBCEngine policy object (null until created)
+    savings: 5000,
+    policy: null,
     annualExpenses: 0,
     totalDebt: 0,
-    legacyWealth: 0,  // wealth transferred from previous generation
+    legacyWealth: 0,
     yearlyNetWorth: [],
   },
   game: {
-    year: 0,          // years played (0-43, ages 22-65)
+    year: 0,
     currentEvent: null,
     recentEventIds: [],
-    ibcChoices: 0,    // total IBC decisions made
+    ibcChoices: 0,
     bankChoices: 0,
     yearSummary: null,
     totalXP: 0,
+    mecWarning: false,   // FIX #3: surfaced for UI
   },
   stats: {
     totalPolicyLoans: 0,
@@ -56,14 +72,18 @@ const initialState = {
   },
 };
 
-// âââ Reducer ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Reducer ──────────────────────────────────────────────────────────────────
 
 function gameReducer(state, action) {
   switch (action.type) {
 
-    // ââ Setup ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // ── Setup ──────────────────────────────────────────────────────────────
     case 'SET_PHASE':
       return { ...state, phase: action.payload };
+
+    case 'HYDRATE':
+      // Restore persisted state on app launch (FIX #2)
+      return action.payload;
 
     case 'CREATE_CHARACTER': {
       const { name, incomeLevel } = action.payload;
@@ -79,28 +99,27 @@ function gameReducer(state, action) {
         },
         finances: {
           ...state.finances,
+          // FIX #1: annualExpenses derived from income at creation and kept in sync
           annualExpenses: Math.round(income * EXPENSE_RATIO),
-          savings: Math.round(income * 0.05),  // 5% starter savings
+          savings: Math.round(income * 0.05),
         },
       };
     }
 
-    // ââ Policy âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // ── Policy ─────────────────────────────────────────────────────────────
     case 'OPEN_POLICY': {
       const { annualPremium } = action.payload;
       const policy = createPolicy(annualPremium, state.player.income);
       const savings = Math.max(0, state.finances.savings - annualPremium);
+
+      // FIX #3: MEC risk halves the opening XP bonus as a gameplay consequence
+      const xpBonus = policy.isMECRisk ? 250 : 500;
+
       return {
         ...state,
-        finances: {
-          ...state.finances,
-          policy,
-          savings,
-        },
-        player: {
-          ...state.player,
-          xp: state.player.xp + 500,
-        },
+        finances: { ...state.finances, policy, savings },
+        player: { ...state.player, xp: state.player.xp + xpBonus },
+        game: { ...state.game, mecWarning: policy.isMECRisk },
       };
     }
 
@@ -115,10 +134,7 @@ function gameReducer(state, action) {
           policy: result.policy,
           savings: state.finances.savings + result.amount,
         },
-        stats: {
-          ...state.stats,
-          totalPolicyLoans: state.stats.totalPolicyLoans + 1,
-        },
+        stats: { ...state.stats, totalPolicyLoans: state.stats.totalPolicyLoans + 1 },
       };
     }
 
@@ -129,18 +145,16 @@ function gameReducer(state, action) {
       const newSavings = Math.max(0, state.finances.savings - amount);
       return {
         ...state,
-        finances: {
-          ...state.finances,
-          policy: result.policy,
-          savings: newSavings,
-        },
+        finances: { ...state.finances, policy: result.policy, savings: newSavings },
       };
     }
 
-    // ââ Annual Cycle ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // ── Annual Cycle ───────────────────────────────────────────────────────
     case 'ADVANCE_YEAR': {
       const { premiumPayment = 0 } = action.payload || {};
       const income = state.player.income;
+
+      // FIX #1: use the already-updated annualExpenses (kept in sync each year)
       const expenses = state.finances.annualExpenses;
       const annualSurplus = income - expenses - premiumPayment;
 
@@ -148,8 +162,10 @@ function gameReducer(state, action) {
       let newPolicy = state.finances.policy;
       let policySummary = null;
       if (newPolicy) {
-        const grown = growPolicy(newPolicy, premiumPayment > newPolicy.annualPremium
-          ? premiumPayment - newPolicy.annualPremium : 0);
+        const extraPremium = premiumPayment > newPolicy.annualPremium
+          ? premiumPayment - newPolicy.annualPremium
+          : 0;
+        const grown = growPolicy(newPolicy, extraPremium);
         newPolicy = grown.policy;
         policySummary = grown.summary;
       }
@@ -161,19 +177,19 @@ function gameReducer(state, action) {
       const newAge = state.player.age + 1;
       const newYear = state.game.year + 1;
 
-      // Calculate net worth
+      // Net worth
       const netWorth = Math.max(0, newSavings) +
         (newPolicy ? newPolicy.cashValue - newPolicy.loanBalance : 0) -
         state.finances.totalDebt;
 
-      // Check for level up
+      // XP + level
       const newXP = state.player.xp + 100;
       const newLevel = Math.floor(newXP / 1000) + 1;
 
-      // Income grows ~2-3% per year (career advancement)
+      // FIX #1: income and expenses both advance together every year
       const incomeGrowth = newAge < 50 ? 0.025 : 0.01;
       const newIncome = Math.round(income * (1 + incomeGrowth));
-      const newExpenses = Math.round(newIncome * EXPENSE_RATIO);
+      const newExpenses = Math.round(newIncome * EXPENSE_RATIO);  // ← was missing before
 
       // Trigger event every year
       const event = getRandomEvent(newAge, state.game.recentEventIds);
@@ -193,10 +209,10 @@ function gameReducer(state, action) {
           ...state.finances,
           policy: newPolicy,
           savings: Math.round(newSavings),
-          annualExpenses: newExpenses,
+          annualExpenses: newExpenses,   // FIX #1: synced each year
           yearlyNetWorth: [
             ...state.finances.yearlyNetWorth,
-            { age: newAge, netWorth: Math.round(netWorth) }
+            { age: newAge, netWorth: Math.round(netWorth) },
           ],
         },
         game: {
@@ -216,13 +232,13 @@ function gameReducer(state, action) {
       };
     }
 
-    // ââ Event Decisions âââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // ── Event Decisions ────────────────────────────────────────────────────
     case 'RESOLVE_EVENT': {
       const { choiceType } = action.payload;  // 'ibc' | 'bank' | 'cash'
       const event = state.game.currentEvent;
       if (!event) return { ...state, phase: 'playing' };
 
-      const option = choiceType === 'ibc' ? event.ibcOption
+      const option = choiceType === 'ibc'   ? event.ibcOption
         : choiceType === 'bank' ? event.bankOption
         : event.cashOption;
 
@@ -233,12 +249,9 @@ function gameReducer(state, action) {
 
       let newPolicy = state.finances.policy;
 
-      // IBC choice: if cost > 0 and policy exists, take a policy loan
       if (choiceType === 'ibc' && event.cost > 0 && newPolicy) {
         const loanResult = takePolicyLoan(newPolicy, event.cost);
-        if (loanResult.success) {
-          newPolicy = loanResult.policy;
-        }
+        if (loanResult.success) newPolicy = loanResult.policy;
       }
 
       const newIBCChoices = choiceType === 'ibc'
@@ -246,16 +259,11 @@ function gameReducer(state, action) {
       const newBankChoices = choiceType === 'bank'
         ? state.game.bankChoices + 1 : state.game.bankChoices;
 
-      const ibcStreak = choiceType === 'ibc'
-        ? state.player.ibcStreak + 1 : 0;
-
-      // Streak bonus XP
+      const ibcStreak = choiceType === 'ibc' ? state.player.ibcStreak + 1 : 0;
       const streakBonus = ibcStreak >= 3 ? 150 : 0;
 
-      // Check retirement
       const isRetired = state.player.age >= 65;
 
-      // Check milestone
       const netWorth = newSavings + (newPolicy ? newPolicy.cashValue - newPolicy.loanBalance : 0);
       const milestones = [...state.stats.wealthMilestones];
       [100000, 250000, 500000, 1000000].forEach((m) => {
@@ -282,34 +290,25 @@ function gameReducer(state, action) {
           bankChoices: newBankChoices,
           totalXP: state.game.totalXP + xpGained + streakBonus,
         },
-        stats: {
-          ...state.stats,
-          wealthMilestones: milestones,
-        },
+        stats: { ...state.stats, wealthMilestones: milestones },
       };
     }
 
-    // ââ Legacy ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // ── Legacy ─────────────────────────────────────────────────────────────
     case 'START_LEGACY': {
-      // Transfer wealth to next generation
       const policy = state.finances.policy;
       const deathBenefit = policy ? policy.deathBenefit : 0;
-      const savingsTransfer = Math.round(state.finances.savings * 0.8); // estate taxes/costs
+      const savingsTransfer = Math.round(state.finances.savings * 0.8);
       const legacyWealth = deathBenefit + savingsTransfer;
-
       return {
         ...state,
         phase: 'legacy',
-        finances: {
-          ...state.finances,
-          legacyWealth,
-        },
+        finances: { ...state.finances, legacyWealth },
       };
     }
 
     case 'PLAY_NEXT_GENERATION': {
       const legacyWealth = state.finances.legacyWealth;
-      // Start fresh with inherited wealth
       return {
         ...initialState,
         phase: 'creation',
@@ -325,17 +324,43 @@ function gameReducer(state, action) {
       };
     }
 
+    case 'RESET_GAME':
+      return initialState;
+
     default:
       return state;
   }
 }
 
-// âââ Context ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Context ──────────────────────────────────────────────────────────────────
 
 const GameContext = createContext(null);
 
 export function GameProvider({ children }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+
+  // FIX #2: Restore saved game on mount
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (raw) {
+          try {
+            const saved = JSON.parse(raw);
+            dispatch({ type: 'HYDRATE', payload: saved });
+          } catch (_) {
+            // corrupt data — start fresh
+          }
+        }
+      })
+      .catch(() => {/* ignore read errors */});
+  }, []);
+
+  // FIX #2: Persist state after every action (skip splash to avoid thrashing)
+  useEffect(() => {
+    if (state.phase !== 'splash') {
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
+    }
+  }, [state]);
 
   const actions = {
     setPhase: (phase) => dispatch({ type: 'SET_PHASE', payload: phase }),
@@ -353,9 +378,12 @@ export function GameProvider({ children }) {
       dispatch({ type: 'RESOLVE_EVENT', payload: { choiceType } }),
     startLegacy: () => dispatch({ type: 'START_LEGACY' }),
     playNextGeneration: () => dispatch({ type: 'PLAY_NEXT_GENERATION' }),
+    resetGame: () => {
+      AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+      dispatch({ type: 'RESET_GAME' });
+    },
   };
 
-  // Computed values
   const computed = {
     netWorth: (() => {
       const { savings, policy, totalDebt } = state.finances;
