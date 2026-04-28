@@ -10,7 +10,7 @@ import { COLORS, FONTS, SPACING, RADIUS, GRADIENTS } from '../theme';
 const INCOME_CARDS = [
   {
     key: 'starter',
-    emoji: 'ð±',
+    emoji: '🌱',
     title: 'Starter',
     income: '$45,000/yr',
     desc: 'Entry-level career. Every dollar matters.',
@@ -20,7 +20,7 @@ const INCOME_CARDS = [
   },
   {
     key: 'middle',
-    emoji: 'ð',
+    emoji: '💼',
     title: 'Professional',
     income: '$75,000/yr',
     desc: 'Established career. Room to grow.',
@@ -31,7 +31,7 @@ const INCOME_CARDS = [
   },
   {
     key: 'high',
-    emoji: 'ð',
+    emoji: '🏆',
     title: 'Executive',
     income: '$120,000/yr',
     desc: 'High earner. Maximize your legacy.',
@@ -80,7 +80,7 @@ export default function CharacterCreationScreen() {
           {step === 1 ? (
             // ââ STEP 1: Name ââââââââââââââââââââââââââââââââââââââââââââââ
             <View style={styles.stepContent}>
-              <Text style={styles.emoji}>ð¤</Text>
+              <Text style={styles.emoji}>👤</Text>
               <Text style={styles.heading}>Who are you?</Text>
               <Text style={styles.subheading}>
                 Enter your character's name. This is the start of your dynasty.
@@ -101,7 +101,7 @@ export default function CharacterCreationScreen() {
               </View>
 
               <View style={styles.infoBox}>
-                <Text style={styles.infoIcon}>ð¡</Text>
+                <Text style={styles.infoIcon}>💡</Text>
                 <Text style={styles.infoText}>
                   You start at age 22 and play until retirement at 65.{'\n'}
                   Build wealth through the Infinite Banking Concept.
@@ -117,14 +117,14 @@ export default function CharacterCreationScreen() {
                   colors={name.trim() ? GRADIENTS.primary : ['#333', '#222']}
                   style={styles.nextGradient}
                 >
-                  <Text style={styles.nextText}>NEXT â</Text>
+                  <Text style={styles.nextText}>NEXT →</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
           ) : (
             // ââ STEP 2: Income Level ââââââââââââââââââââââââââââââââââââââ
             <View style={styles.stepContent}>
-              <Text style={styles.emoji}>ð¼</Text>
+              <Text style={styles.emoji}>💼</Text>
               <Text style={styles.heading}>Choose Your Career</Text>
               <Text style={styles.subheading}>
                 Your income level determines your starting position.
@@ -142,7 +142,7 @@ export default function CharacterCreationScreen() {
                 >
                   {card.recommended && (
                     <View style={styles.recommendedBadge}>
-                      <Text style={styles.recommendedText}>â­ RECOMMENDED</Text>
+                      <Text style={styles.recommendedText}>⭐ RECOMMENDED</Text>
                     </View>
                   )}
                   <View style={styles.incomeCardRow}>
@@ -161,7 +161,7 @@ export default function CharacterCreationScreen() {
                       styles.selectCircle,
                       selectedIncome === card.key && styles.selectCircleActive,
                     ]}>
-                      {selectedIncome === card.key && <Text style={styles.checkmark}>â</Text>}
+                      {selectedIncome === card.key && <Text style={styles.checkmark}>✔</Text>}
                     </View>
                   </View>
                   <View style={styles.premiumRow}>
@@ -173,7 +173,7 @@ export default function CharacterCreationScreen() {
 
               <TouchableOpacity style={styles.startButton} onPress={startGame} activeOpacity={0.85}>
                 <LinearGradient colors={GRADIENTS.gold} style={styles.startGradient}>
-                  <Text style={styles.startText}>ð BEGIN YOUR DYNASTY</Text>
+                  <Text style={styles.startText}>🚀 BEGIN YOUR DYNASTY</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>

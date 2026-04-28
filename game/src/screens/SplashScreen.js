@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, Animated, Dimensions, TouchableOpacity,
+  View, Text, StyleSheet, Animated, Dimensions, TouchableOpacity, Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useGame } from '../context/GameContext';
@@ -69,9 +69,7 @@ export default function SplashScreen() {
         {/* Logo Mark */}
         <Animated.View style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }]}>
           <LinearGradient colors={GRADIENTS.hero} style={styles.logoGradient}>
-            <Animated.Text style={[styles.logoIcon, { transform: [{ rotate: coinRotate }] }]}>
-              ð¦
-            </Animated.Text>
+            <Animated.Text style={[styles.logoIcon, { transform: [{ rotate: coinRotate }] }]}>💰</Animated.Text>
           </LinearGradient>
           <View style={styles.orbitRing} />
         </Animated.View>
@@ -84,9 +82,9 @@ export default function SplashScreen() {
         {/* Stats row */}
         <View style={styles.statsRow}>
           {[
-            { icon: 'ð', label: '43 Years', sub: 'of gameplay' },
-            { icon: 'ðï¸', label: 'IBC', sub: 'strategy' },
-            { icon: 'ð¨âð©âð§âð¦', label: 'Legacy', sub: 'building' },
+            { icon: '📅', label: '43 Years', sub: 'of gameplay' },
+            { icon: '🏛️', label: 'IBC', sub: 'strategy' },
+            { icon: '👨‍👩‍👧‍👦', label: 'Legacy', sub: 'building' },
           ].map((s, i) => (
             <View key={i} style={styles.statItem}>
               <Text style={styles.statIcon}>{s.icon}</Text>
@@ -104,7 +102,7 @@ export default function SplashScreen() {
         >
           <LinearGradient colors={GRADIENTS.primary} style={styles.startGradient}>
             <Text style={styles.startText}>START YOUR DYNASTY</Text>
-            <Text style={styles.startArrow}>â</Text>
+            <Text style={styles.startArrow}>→</Text>
           </LinearGradient>
         </TouchableOpacity>
 
